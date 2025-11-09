@@ -6,38 +6,52 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Response interceptor to handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      window.location.href = '/';
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => {
     return Promise.reject(error);
   }
 );
 
 export const authAPI = {
-  register: (userData) => api.post('/api/auth/register', userData),
-  login: (credentials) => api.post('/api/auth/login', credentials),
+  login: async (credentials) => {
+    const response = await api.post('/api/auth/login', credentials);
+    return response.data;
+  },
+  register: async (userData) => {
+    const response = await api.post('/api/auth/register', userData);
+    return response.data;
+  },
 };
 
 export const tasksAPI = {
-  getTasks: (params = {}) => api.get('/api/tasks', { params }),
-  getTask: (id) => api.get(`/api/tasks/${id}`),
-  createTask: (taskData) => api.post('/api/tasks', taskData),
-  updateTask: (id, taskData) => api.put(`/api/tasks/${id}`, taskData),
-  deleteTask: (id) => api.delete(`/api/tasks/${id}`),
+  getTasks: async (params = {}) => {
+    const response = await api.get('/api/tasks', { params });
+    return response.data;
+  },
+  getTask: async (id) => {
+    const response = await api.get(`/api/tasks/${id}`);
+    return response.data;
+  },
+  createTask: async (taskData) => {
+    const response = await api.post('/api/tasks', taskData);
+    return response.data;
+  },
+  updateTask: async (id, taskData) => {
+    const response = await api.put(`/api/tasks/${id}`, taskData);
+    return response.data;
+  },
+  deleteTask: async (id) => {
+    const response = await api.delete(`/api/tasks/${id}`);
+    return response.data;
+  },
 };
 
 export default api;

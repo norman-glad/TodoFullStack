@@ -80,7 +80,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddCors();
+
 var app = builder.Build();
+
+app.UseCors(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyHeader()
+    .AllowAnyMethod());
 
 // --- 5. SWAGGER ENABLED IN PRODUCTION (OPTIONAL BUT RECOMMENDED FOR TESTING) ---
 // Note: We are removing the if (app.Environment.IsDevelopment()) check

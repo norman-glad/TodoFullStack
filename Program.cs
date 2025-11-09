@@ -94,4 +94,6 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();  // <-- AUTO APPLIES ALL MIGRATIONS ON STARTUP!
     Console.WriteLine("Migrations applied successfully!");
 }
-app.Run();
+
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5058";
+app.Run($"http://0.0.0.0:{port}");

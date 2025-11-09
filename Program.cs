@@ -7,6 +7,7 @@ using System.Text;
 using ToDoApi.Models;
 using ToDoApi.DTOs; // Optional, for IntelliSense
 using ToDoApi.Controllers; // Optional
+using Microsoft.AspNetCore.HttpOverrides; // <--- NEW: For Azure App Service HTTPS fix
 
 using System;
 
@@ -16,11 +17,22 @@ AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. PostgreSQL
+// --- 1. CONFIGURE FORWARDED HEADERS (THE FIX) ---
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = 
+        ForwardedHeaders.XForwardedFor | 
+        ForwardedHeaders.XForwardedProto;
+    // CRITICAL: Clear known networks/proxies to trust everything coming from Azure's internal network
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// 2. PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres") ?? 
                       "Host=localhost;Database=todo;Username=postgres;Password=Pass123!"));
-// 2. Identity
+// 3. Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(opts =>
 {
     opts.Password.RequiredLength = 6;
@@ -34,7 +46,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(opts =>
 builder.Services.AddScoped<UserManager<IdentityUser>>();
 builder.Services.AddScoped<SignInManager<IdentityUser>>();
 
-// 3. JWT
+// 4. JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -70,18 +82,22 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// --- 5. SWAGGER ENABLED IN PRODUCTION (OPTIONAL BUT RECOMMENDED FOR TESTING) ---
+// Note: We are removing the if (app.Environment.IsDevelopment()) check
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 // Auto create DB + migrate on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();  // <--- THIS CREATES DB + TABLES AUTOMATICALLY
+    db.Database.Migrate();  // <--- THIS CREATES DB + TABLES AUTOMATICALLY
 }
+
+// --- 6. ADDED FORWARDED HEADERS MIDDLEWARE ---
+// MUST be called before UseHttpsRedirection()
+app.UseForwardedHeaders(); 
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
@@ -91,7 +107,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();  // <-- AUTO APPLIES ALL MIGRATIONS ON STARTUP!
+    db.Database.Migrate();  // <-- AUTO APPLIES ALL MIGRATIONS ON STARTUP!
     Console.WriteLine("Migrations applied successfully!");
 }
 

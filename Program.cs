@@ -5,9 +5,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using ToDoApi.Models;
-using ToDoApi.DTOs;
-using ToDoApi.Controllers;
-using Microsoft.AspNetCore.HttpOverrides;
+using ToDoApi.DTOs; // Optional, for IntelliSense
+using ToDoApi.Controllers; // Optional
+using Microsoft.AspNetCore.HttpOverrides; // <--- NEW: For Azure App Service HTTPS fix
 
 using System;
 
@@ -32,74 +32,37 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres") ?? 
                       "Host=localhost;Database=todo;Username=postgres;Password=Pass123!"));
-
-// 3. Identity - Use AddIdentityCore instead of AddIdentity to avoid cookie auth
-builder.Services.AddIdentityCore<IdentityUser>(opts =>
+// 3. Identity
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(opts =>
 {
     opts.Password.RequiredLength = 6;
     opts.Password.RequireNonAlphanumeric = false;
     opts.Password.RequireDigit = false;
     opts.Password.RequireUppercase = false;
-    opts.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// 4. JWT Authentication - Configure PROPERLY before AddControllers
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddScoped<UserManager<IdentityUser>>();
+builder.Services.AddScoped<SignInManager<IdentityUser>>();
+
+// 4. JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = "ToDoApi",
-        ValidAudience = "ToDoClient",
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("SuperSecretKey1234567890!@#$%^&*()"))
-    };
-    
-    // Important for API-only auth
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            Console.WriteLine($"Authentication failed: {context.Exception.Message}");
-            return Task.CompletedTask;
-        },
-        OnChallenge = context =>
-        {
-            Console.WriteLine("OnChallenge: JWT token is missing or invalid");
-            return Task.CompletedTask;
-        }
-    };
-});
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "ToDoApi",
+            ValidAudience = "ToDoClient",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("SuperSecretKey1234567890!@#$%^&*()"))
+        };
+    });
 
 builder.Services.AddAuthorization();
-
-// 5. CORS - Configure PROPERLY
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins(
-                "http://localhost:3000",  // React dev server
-                "https://localhost:3000", // React dev server with HTTPS
-                "http://localhost:5000",  // Your dev server
-                "https://todoapi-norm-d4ere5eda0hje8e6.canadacentral-01.azurewebsites.net" // Your production backend
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials(); // Important if you use cookies, but we're using JWT
-    });
-});
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -108,59 +71,50 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Please enter JWT with Bearer into field",
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-        { 
-            new OpenApiSecurityScheme { 
-                Reference = new OpenApiReference { 
-                    Type = ReferenceType.SecurityScheme, 
-                    Id = "Bearer" 
-                } 
-            }, 
-            new string[] { } 
-        } 
+        { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }}, [] }
     });
 });
+
+builder.Services.AddCors();
 
 var app = builder.Build();
 
-// --- MIDDLEWARE ORDER IS CRITICAL ---
+app.UseCors(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyHeader()
+    .AllowAnyMethod());
 
-// 1. Forwarded Headers FIRST
-app.UseForwardedHeaders(); 
-
-// 2. CORS BEFORE Authentication
-app.UseCors();
-
-// 3. Swagger (order doesn't matter much for this)
+// --- 5. SWAGGER ENABLED IN PRODUCTION (OPTIONAL BUT RECOMMENDED FOR TESTING) ---
+// Note: We are removing the if (app.Environment.IsDevelopment()) check
 app.UseSwagger();
-app.UseSwaggerUI(c => 
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "ToDo API v1");
-    c.RoutePrefix = string.Empty; // Set Swagger UI at root
-});
+app.UseSwaggerUI();
 
-// 4. HTTPS Redirection (optional for APIs, but good practice)
-app.UseHttpsRedirection();
-
-// 5. Authentication BEFORE Authorization
-app.UseAuthentication();
-
-// 6. Authorization
-app.UseAuthorization();
-
-// 7. Controllers
-app.MapControllers();
 
 // Auto create DB + migrate on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    db.Database.Migrate();  // <--- THIS CREATES DB + TABLES AUTOMATICALLY
+}
+
+// --- 6. ADDED FORWARDED HEADERS MIDDLEWARE ---
+// MUST be called before UseHttpsRedirection()
+app.UseForwardedHeaders(); 
+
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();  // <-- AUTO APPLIES ALL MIGRATIONS ON STARTUP!
     Console.WriteLine("Migrations applied successfully!");
 }
 

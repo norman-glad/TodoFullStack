@@ -94,13 +94,22 @@ public class TasksController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] CreateTaskDto dto)
     {
+        var userId = GetUserId();
+        
+        // Debug: Check if user exists
+        var userExists = await _db.Users.AnyAsync(u => u.Id == userId);
+        if (!userExists)
+        {
+            return BadRequest($"User with ID {userId} does not exist in the database. Please logout and register again.");
+        }
+        
         var task = new TaskItem
         {
             Title = dto.Title,
             Description = dto.Description,
             DueDate = dto.DueDate.HasValue ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc) : null,
             Priority = dto.Priority,
-            UserId = GetUserId(),
+            UserId = userId,
             CreatedAt = DateTime.UtcNow  // Force UTC
         };
 

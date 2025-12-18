@@ -15,7 +15,19 @@ const TaskForm = ({ onTaskCreated }) => {
     setLoading(true);
 
     try {
-      await tasksAPI.createTask(formData);
+      // Format the data properly for the backend
+      const taskData = {
+        title: formData.title,
+        description: formData.description || null,
+        dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
+        priority: parseInt(formData.priority, 10) || 3,
+      };
+      
+      console.log('Sending task data:', JSON.stringify(taskData, null, 2));
+      
+      const result = await tasksAPI.createTask(taskData);
+      console.log('Task created successfully:', result);
+      
       setFormData({
         title: '',
         description: '',
@@ -27,6 +39,8 @@ const TaskForm = ({ onTaskCreated }) => {
       }
     } catch (error) {
       console.error('Failed to create task:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://todoapi-norm-d4ere5eda0hje8e6.canadacentral-01.azurewebsites.net';
+const API_BASE_URL = 'http://localhost:5058';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,6 +10,8 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log('API Request to:', config.url); // Debug log
+    console.log('Token in localStorage:', token ? 'exists' : 'missing'); // Debug log
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

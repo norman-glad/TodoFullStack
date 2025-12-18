@@ -15,8 +15,15 @@ const Login = ({ onSwitchToRegister }) => {
 
     try {
       const response = await authAPI.login(formData);
-      login(response.token); // Assuming your API returns a token
+      console.log('Login response:', response); // Debug log
+      console.log('Token received:', response.token); // Debug log
+      if (response.token) {
+        login(response.token);
+      } else {
+        setError('No token received from server');
+      }
     } catch (err) {
+      console.error('Login error:', err); // Debug log
       setError('Login failed. Please check your credentials.');
     } finally {
       setLoading(false);

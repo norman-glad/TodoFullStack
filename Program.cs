@@ -5,34 +5,20 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using ToDoApi.Models;
-using ToDoApi.DTOs; // Optional, for IntelliSense
-using ToDoApi.Controllers; // Optional
-using Microsoft.AspNetCore.HttpOverrides; // <--- NEW: For Azure App Service HTTPS fix
+using ToDoApi.DTOs;
+using ToDoApi.Controllers;
 
-using System;
-
-// ADD THESE TWO LINES AT THE VERY TOP (before builder)
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+// REMOVE THESE LINES – not needed for local dev
+// using Microsoft.AspNetCore.HttpOverrides;
+// AppContext.SetSwitch(...); lines
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. CONFIGURE FORWARDED HEADERS (THE FIX) ---
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = 
-        ForwardedHeaders.XForwardedFor | 
-        ForwardedHeaders.XForwardedProto;
-    // CRITICAL: Clear known networks/proxies to trust everything coming from Azure's internal network
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-});
-
-// 2. PostgreSQL
+// 1. HARD-CODE LOCAL DOCKER POSTGRESQL CONNECTION
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres") ?? 
-                      "Host=localhost;Database=todo;Username=postgres;Password=Pass123!"));
-// 3. Identity
+    options.UseNpgsql("Host=localhost;Database=todo;Username=postgres;Password=Pass123!;Port=5432;Trust Server Certificate=true;"));
+
+// 2. Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(opts =>
 {
     opts.Password.RequiredLength = 6;
@@ -43,11 +29,31 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(opts =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
+// IMPORTANT: Prevent Identity from redirecting to login page for APIs
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
 builder.Services.AddScoped<UserManager<IdentityUser>>();
 builder.Services.AddScoped<SignInManager<IdentityUser>>();
 
-// 4. JWT
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+// 3. JWT Authentication - Set JWT as default scheme (NOT cookies from Identity)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -80,43 +86,38 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddCors();
+// CORS for local frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
-app.UseCors(policy => policy
-    .AllowAnyOrigin()
-    .AllowAnyHeader()
-    .AllowAnyMethod());
+// Enable CORS
+app.UseCors("AllowAll");
 
-// --- 5. SWAGGER ENABLED IN PRODUCTION (OPTIONAL BUT RECOMMENDED FOR TESTING) ---
-// Note: We are removing the if (app.Environment.IsDevelopment()) check
+// Swagger always on for local dev
 app.UseSwagger();
 app.UseSwaggerUI();
 
-
-// Auto create DB + migrate on startup
+// Auto-migrate on startup (creates DB if not exists)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();  // <--- THIS CREATES DB + TABLES AUTOMATICALLY
+    db.Database.Migrate();
+    Console.WriteLine("Local database migrated successfully!");
 }
-
-// --- 6. ADDED FORWARDED HEADERS MIDDLEWARE ---
-// MUST be called before UseHttpsRedirection()
-app.UseForwardedHeaders(); 
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();  // <-- AUTO APPLIES ALL MIGRATIONS ON STARTUP!
-    Console.WriteLine("Migrations applied successfully!");
-}
-
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5058";
-app.Run($"http://0.0.0.0:{port}");
+// Local port only – no Azure port logic
+app.Run("http://localhost:5058");

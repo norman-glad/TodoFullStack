@@ -57,10 +57,10 @@ public class AuthController : ControllerBase
     {
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),  // Use user.Id as subject
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),  // user.Id as subject
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id),    // This is what UserManager.GetUserId() reads
-            new Claim(ClaimTypes.Email, user.Email!)          // Store email separately
+            new Claim(ClaimTypes.NameIdentifier, user.Id),    // this is what UserManager.GetUserId() reads
+            new Claim(ClaimTypes.Email, user.Email!)          
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("SuperSecretKey1234567890!@#$%^&*()"));

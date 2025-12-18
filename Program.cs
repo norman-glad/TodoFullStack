@@ -14,7 +14,7 @@ using ToDoApi.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. HARD-CODE LOCAL DOCKER POSTGRESQL CONNECTION
+// 1. LOCAL DOCKER POSTGRESQL CONNECTION
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql("Host=localhost;Database=todo;Username=postgres;Password=Pass123!;Port=5432;Trust Server Certificate=true;"));
 
@@ -29,7 +29,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(opts =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// IMPORTANT: Prevent Identity from redirecting to login page for APIs
+// Prevent from redirecting to login page for APIs
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Events.OnRedirectToLogin = context =>
@@ -47,7 +47,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<UserManager<IdentityUser>>();
 builder.Services.AddScoped<SignInManager<IdentityUser>>();
 
-// 3. JWT Authentication - Set JWT as default scheme (NOT cookies from Identity)
+// 3. JWT - Set JWT as default scheme (NOT cookies from Identity)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -86,7 +86,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// CORS for local frontend
+// CORS 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>

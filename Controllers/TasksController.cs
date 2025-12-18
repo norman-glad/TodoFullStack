@@ -96,7 +96,7 @@ public class TasksController : ControllerBase
     {
         var userId = GetUserId();
         
-        // Debug: Check if user exists
+        // Check if user exists
         var userExists = await _db.Users.AnyAsync(u => u.Id == userId);
         if (!userExists)
         {
@@ -110,7 +110,7 @@ public class TasksController : ControllerBase
             DueDate = dto.DueDate.HasValue ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc) : null,
             Priority = dto.Priority,
             UserId = userId,
-            CreatedAt = DateTime.UtcNow  // Force UTC
+            CreatedAt = DateTime.UtcNow 
         };
 
         _db.Tasks.Add(task);

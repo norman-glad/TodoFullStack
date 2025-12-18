@@ -4,7 +4,7 @@
 
 @contentType = application/json
 
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlckBleGFtcGxlLmNvbSIsImp0aSI6IjYyNmJiYzk4LTg0YWYtNGU2Mi1iNDc2LTE1MWRhZDkzMDA2YiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNGE0ZWFiMGItYTM4NC00YjIxLTk1OTQtNTUwZGUxM2ZiOWQ0IiwiZXhwIjoxNzY2MTI0NDEzLCJpc3MiOiJUb0RvQXBpIiwiYXVkIjoiVG9Eb0NsaWVudCJ9.dY4z5fal26vcTG7zTVMOvdaePpYmlzchTwVNNT3Kkfs","userId":"4a4eab0b-a384-4b21-9594-550de13fb9d4","email":"testuser@example.com
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjAxQGV4YW1wbGUuY29tIiwianRpIjoiMTNhMWJhZmEtNjhmZi00Y2VjLTkwZGYtZmFjNjVmMmVkMzIxIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIyZGVlOWJjYi03NWU5LTQ1MTgtOTI0OS03ZTQ3MjJkNjc3NmMiLCJleHAiOjE3NjYxNjQ1MzQsImlzcyI6IlRvRG9BcGkiLCJhdWQiOiJUb0RvQ2xpZW50In0.tIpBUi0qrn7etwUnv1RhbdN9xUtXZYMmtBm1ew1hPT0
 @taskId = YOUR_TASK_ID_HERE
 
 ###############################################################################

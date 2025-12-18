@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "YLRQaAt0gV0=",
+  "dgSpecHash": "Dlsa0DJ2B+Y=",
   "success": true,
-  "projectFilePath": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\ToDoFullStack\\ToDoApi\\ToDoApi.csproj",
+  "projectFilePath": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\TodoFullStack\\ToDoApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\norma\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\norma\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\9.0.0\\microsoft.aspnetcore.authentication.jwtbearer.9.0.0.nupkg.sha512",

@@ -3728,11 +3728,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\ToDoFullStack\\ToDoApi\\ToDoApi.csproj",
+      "projectUniqueName": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\TodoFullStack\\ToDoApi.csproj",
       "projectName": "ToDoApi",
-      "projectPath": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\ToDoFullStack\\ToDoApi\\ToDoApi.csproj",
+      "projectPath": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\TodoFullStack\\ToDoApi.csproj",
       "packagesPath": "C:\\Users\\norma\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\ToDoFullStack\\ToDoApi\\obj\\",
+      "outputPath": "C:\\Users\\norma\\OneDrive\\Documents\\GitHub\\TodoFullStack\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

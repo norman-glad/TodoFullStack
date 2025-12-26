@@ -9,7 +9,7 @@ namespace ToDoApi.Controllers;
 
 [Route("api/tasks")]
 [ApiController]
-[Authorize] // All endpoints require JWT
+[Authorize]
 public class TasksController : ControllerBase
 {
     private readonly AppDbContext _db;
